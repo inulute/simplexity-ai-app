@@ -470,7 +470,7 @@ function createWindow() {
   mainWindowState.manage(mainWindow);
 
   // Application menu with Find and Zoom accelerators (menu bar hidden, accelerators still work)
-  onst appMenu = Menu.buildFromTemplate([
+  const appMenu = Menu.buildFromTemplate([
     {
       label: 'Edit',
       submenu: [
