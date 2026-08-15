@@ -319,7 +319,9 @@ class NotificationManager {
         this.saveNotifications();
       }
   
-      const htmlContent = marked.parse(notification.content);
+      const renderer = new marked.Renderer();
+      renderer.html = () => '';
+      const htmlContent = marked.parse(notification.content, { renderer });
   
       this.notificationWindow = new BrowserWindow({
         width: 500,
