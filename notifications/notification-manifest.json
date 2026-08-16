@@ -1,6 +1,12 @@
 {
     "notifications": [
-      
+      {
+        "id": "7",
+        "title": "SimplexityAI v5.1.0 — Security fixes and Intel Mac support",
+        "filename": "notification-7.md",
+        "date": "2026-08-16",
+        "priority": "high"
+      },
       {
         "id": "6",
         "title": "Join Our Telegram Channel",
