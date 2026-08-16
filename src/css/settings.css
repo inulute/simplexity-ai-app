@@ -86,7 +86,7 @@ body {
   min-width: 140px;
 }
 
-.setting-item label img, .shortcut-item label img {
+.setting-item label img, .shortcut-item label img, .sidebar-shortcuts-item label img {
   width: 20px;
   height: 20px;
   margin-right: 8px;
@@ -340,4 +340,94 @@ input[type="checkbox"]:not(:checked) + .toggle-slider {
 
 ::-webkit-scrollbar {
   width: 8px;
+}
+/* Perplexity sidebar shortcuts — a multi-select, so chips rather than a
+   column of six switches: it stays compact and reads as "pick any". Colours
+   reuse the toggle palette so it sits with the rest of the panel. */
+.sidebar-shortcuts-item label {
+  display: flex;
+  align-items: center;
+  font-size: 0.9em;
+  color: #E8E8E6;
+}
+
+.sidebar-shortcuts-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.sidebar-shortcuts-hint {
+  font-size: 0.78em;
+  color: #8a8d92;
+  margin: 2px 0 10px 26px;
+  line-height: 1.4;
+}
+
+.sidebar-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.sidebar-shortcut-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid #383a3f;
+  border-radius: 6px;
+  background-color: transparent;
+  color: #9a9da2;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: background-color .2s, border-color .2s, color .2s;
+  user-select: none;
+}
+
+.sidebar-shortcut-chip:hover {
+  border-color: #1E4D53;
+  color: #E8E8E6;
+}
+
+/* The tick is the state indicator; the fill alone is too subtle on dark. */
+.sidebar-shortcut-chip::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #55585e;
+  border-radius: 4px;
+  transition: background-color .2s, border-color .2s;
+}
+
+.sidebar-shortcut-chip:has(input:checked) {
+  background-color: #1E4D53;
+  border-color: #2f7d87;
+  color: #E8E8E6;
+}
+
+.sidebar-shortcut-chip:has(input:checked)::before {
+  background-color: #E8E8E6;
+  border-color: #E8E8E6;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%231E4D53' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3.2L13 5'/%3E%3C/svg%3E");
+  background-size: 12px 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.sidebar-shortcut-chip input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Keyboard users need to see focus, since the real input is hidden. */
+.sidebar-shortcut-chip:focus-within {
+  outline: 2px solid #2f7d87;
+  outline-offset: 2px;
 }

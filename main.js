@@ -1432,6 +1432,11 @@ ipcMain.on('set-settings', (event, data) => {
     settings.set('restoreLastSession', data.restoreLastSession);
   }
 
+  if (Array.isArray(data.sidebarShortcuts)) {
+    settings.set('sidebarShortcuts', data.sidebarShortcuts);
+    broadcastSidebarShortcuts();
+  }
+
   if (data.closeToTray !== undefined) {
     settings.set('closeToTray', data.closeToTray);
   }
@@ -1443,6 +1448,18 @@ ipcMain.on('set-settings', (event, data) => {
   reattachShortcuts();
 });
 
+// The sidebar injector in preload_inject.js asks for this on every page load.
+ipcMain.handle('get-sidebar-shortcuts', () => settings.get('sidebarShortcuts', []));
+
+function broadcastSidebarShortcuts() {
+  const ids = settings.get('sidebarShortcuts', []);
+  Object.values(views).forEach((view) => {
+    if (view && view.webContents && !view.webContents.isDestroyed()) {
+      view.webContents.send('sidebar-shortcuts-changed', ids);
+    }
+  });
+}
+
 ipcMain.on('get-settings', (event) => {
   const data = {
     shortcuts,
@@ -1451,6 +1468,7 @@ ipcMain.on('get-settings', (event) => {
     autoStartEnabled: autoStartEnabled,
     closeToTray: settings.get('closeToTray', true),
     restoreLastSession: settings.get('restoreLastSession', true),
+    sidebarShortcuts: settings.get('sidebarShortcuts', []),
     defaultShortcuts,
     ctrlEnterToSend: settings.get('ctrlEnterToSend', false)
   };
