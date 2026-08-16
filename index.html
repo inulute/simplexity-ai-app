@@ -18,8 +18,11 @@
   </div>
 </a>
 <div class="sidebar-separator" style="background-color: white; height: 1px; margin: 8px 0;"></div>
-      <a href="#" class="menu-item" onclick="window.electronAPI.switchAITool('https://perplexity.ai')">
+      <a href="#" class="menu-item" id="tab1-button" onclick="window.electronAPI.switchAITool('tab1')">
         <img src="./assets/icons/svg/perplexity-ai-icon.svg" alt="AI Search" title="AI Search"/>
+      </a>
+      <a href="#" class="menu-item" id="tab2-button" onclick="window.electronAPI.switchAITool('tab2')">
+        <img src="./assets/icons/svg/ai-icon.svg" alt="Second Tab" title="Second Tab (separate Perplexity workspace)"/>
       </a>
       <a href="#" class="menu-item" onclick="window.electronAPI.switchAITool('refresh')">
         <img src="./assets/icons/svg/refresh-icon.svg" alt="Refresh" title="Refresh"/>

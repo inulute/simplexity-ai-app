@@ -1,6 +1,6 @@
-# SimplexityAI v5.1.0 — Security fixes and Intel Mac support 🔒
+# SimplexityAI v5.1.0 — Security fixes, Intel Mac support, and a second tab 🔒
 
-Notification content is now sanitised before it renders, the macOS tray works again, and Intel Macs have a build for the first time since v5.0.0.
+Notification content is now sanitised before it renders, the macOS tray works again, Intel Macs have a build for the first time since v5.0.0, and the second sidebar tab is back as a proper second Perplexity workspace.
 
 ---
 
@@ -24,8 +24,13 @@ The macOS build was Apple Silicon only, so Intel Macs had nothing to download. m
 
 ## What's Changed
 
-### AI Labs has been removed
-Perplexity retired the Labs destination — `labs.perplexity.ai` no longer resolves — so the AI Labs button had been quietly loading the same site as AI Search. The button, its settings option and its shortcut are gone. If it was your default view, you'll be switched to AI Search rather than opening a dead page.
+### AI Labs is now a second tab
+Perplexity retired the Labs destination — `labs.perplexity.ai` no longer resolves — so the AI Labs button had been quietly loading the same site as AI Search.
+
+Since most people were using it as a second tab, that's what it now is. **Second Tab** opens an independent Perplexity workspace with its own conversation and history, switchable from the sidebar or with **Cmd/Ctrl+2**. Both tabs share your login. If AI Labs was your default view, you'll be switched to AI Search rather than opening a dead page.
+
+### Background tabs keep their state
+An inactive tab was being destroyed about five minutes after you switched away, so going back meant starting over. Both tabs now stay alive while the app is running.
 
 ### Smaller download list
 The macOS `.zip` has been removed; it only existed to serve an auto-updater this app doesn't use. The `.dmg` is unaffected.
