@@ -89,7 +89,7 @@ your data stays with P AI
 
 ### 🔍 **Enhanced Search Features**
 - **Integrated Find Bar** — Press Ctrl/Cmd+F to search within results
-- **Quick Navigation** — Seamlessly switch between P AI and P Labs
+- **Quick Navigation** — Jump straight to P AI from anywhere
 - **One-Click Refresh** — Restart your session with a single click
 - **Zoom Controls** — Adjust text size with Ctrl +/- for better readability
 
@@ -227,7 +227,6 @@ All shortcuts are **fully customizable** in Settings!
 | **Quick Search** | `Alt+Shift+X` | `Cmd+Shift+X` | Search selected text from anywhere |
 | **Custom Prefix Search** | `Alt+Shift+D` | `Cmd+Shift+D` | Search with custom prefixes |
 | **Open P AI** | `Ctrl+1` | `Cmd+1` | Switch to P AI |
-| **Open P Labs** | `Ctrl+2` | `Cmd+2` | Switch to P Labs |
 | **Send to Tray** | `Alt+Shift+W` | `Cmd+T` | Minimize to system tray |
 | **Restore from Tray** | `Alt+Shift+Q` | `Cmd+Shift+T` | Restore app window |
 | **Find in Page** | `Ctrl+F` | `Cmd+F` | Search text on current page |
@@ -291,7 +290,7 @@ Access settings by clicking the ⚙️ icon in the sidebar.
 
 ### Available Settings:
 
-- **Default AI Site** — Choose which P service loads on startup (AI Search or Labs)
+- **Default AI Site** — Choose which P service loads on startup
 - **Auto-Start** — Enable/disable launch on system boot
 - **Close to Tray** — Choose whether X button minimizes to tray or quits app
 - **Keyboard Shortcuts** — Customize all global shortcuts

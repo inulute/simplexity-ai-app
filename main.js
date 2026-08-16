@@ -170,7 +170,6 @@ function processCommandLineArgs(argv) {
 const defaultShortcuts = isMac
   ? {
       perplexityAI: { key: 'Command+1', enabled: false },
-      perplexityLabs: { key: 'Command+2', enabled: false },
       sendToTray: { key: 'Command+W', enabled: false },
       restoreApp: { key: 'Command+Shift+Q', enabled: false },
       quickSearch: { key: 'Command+Shift+P', enabled: false },
@@ -178,7 +177,6 @@ const defaultShortcuts = isMac
     }
   : {
       perplexityAI: { key: 'Control+1', enabled: false },
-      perplexityLabs: { key: 'Control+2', enabled: false },
       sendToTray: { key: 'Alt+Shift+W', enabled: false },
       restoreApp: { key: 'Alt+Shift+Q', enabled: false },
       quickSearch: { key: 'Alt+Shift+X', enabled: false },
@@ -225,7 +223,6 @@ function registerShortcuts() {
 
   const shortcutActions = {
     perplexityAI: () => switchView('https://perplexity.ai'),
-    perplexityLabs: () => switchView('https://labs.perplexity.ai'),
     sendToTray: () => mainWindow.hide(),
     restoreApp: () => {
       if (mainWindow.isMinimized() || !mainWindow.isVisible()) {
@@ -627,8 +624,19 @@ app.on('before-quit', () => {
   }
 });
 
+// labs.perplexity.ai now 301s to playground.perplexity.ai and then to the
+// generic www.perplexity.ai homepage, so the AI Labs destination no longer
+// exists. Existing installs may still have it stored as their default site.
+function normalizeDefaultAI(url) {
+  if (typeof url === 'string' && url.includes('labs.perplexity.ai')) {
+    settings.set('defaultAI', 'https://perplexity.ai');
+    return 'https://perplexity.ai';
+  }
+  return url;
+}
+
 function loadDefaultAI() {
-  const defaultAI = settings.get('defaultAI', 'https://perplexity.ai');
+  const defaultAI = normalizeDefaultAI(settings.get('defaultAI', 'https://perplexity.ai'));
   switchView(defaultAI);
 }
 
@@ -664,12 +672,10 @@ function switchView(url) {
     const currentUrl = currentView.webContents.getURL();
     let baseUrl;
     
-    if (currentUrl.includes('labs.perplexity.ai')) {
-      baseUrl = 'https://labs.perplexity.ai';
-    } else if (currentUrl.includes('perplexity.ai')) {
+    if (currentUrl.includes('perplexity.ai')) {
       baseUrl = 'https://perplexity.ai';
     } else {
-      baseUrl = settings.get('defaultAI', 'https://perplexity.ai');
+      baseUrl = normalizeDefaultAI(settings.get('defaultAI', 'https://perplexity.ai'));
     }
     
     console.log(`Refreshing to base URL: ${baseUrl}`);
@@ -1318,7 +1324,7 @@ ipcMain.on('set-settings', (event, data) => {
 ipcMain.on('get-settings', (event) => {
   const data = {
     shortcuts,
-    defaultAI: settings.get('defaultAI', 'https://perplexity.ai'),
+    defaultAI: normalizeDefaultAI(settings.get('defaultAI', 'https://perplexity.ai')),
     disableHardwareAcceleration: settings.get('disableHardwareAcceleration', false),
     autoStartEnabled: autoStartEnabled,
     closeToTray: settings.get('closeToTray', true),

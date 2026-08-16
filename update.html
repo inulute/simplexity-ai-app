@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>Update Available</title>
+  <!-- Scripts are bundled locally, so nothing remote may be executed. The
+       only network access this page needs is the release-notes fetch in
+       src/js/renderer/update_renderer.js. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src https://raw.githubusercontent.com; form-action 'none'; base-uri 'none'">
   <link rel="stylesheet" href="./src/css/update.css">
   
   <!-- Bundled locally: loading these from a CDN breaks the dialog whenever the
