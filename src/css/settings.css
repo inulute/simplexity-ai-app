@@ -86,7 +86,7 @@ body {
   min-width: 140px;
 }
 
-.setting-item label img, .shortcut-item label img {
+.setting-item label img, .shortcut-item label img, .sidebar-shortcuts-item label img {
   width: 20px;
   height: 20px;
   margin-right: 8px;
@@ -344,6 +344,13 @@ input[type="checkbox"]:not(:checked) + .toggle-slider {
 /* Perplexity sidebar shortcuts — a multi-select, so chips rather than a
    column of six switches: it stays compact and reads as "pick any". Colours
    reuse the toggle palette so it sits with the rest of the panel. */
+.sidebar-shortcuts-item label {
+  display: flex;
+  align-items: center;
+  font-size: 0.9em;
+  color: #E8E8E6;
+}
+
 .sidebar-shortcuts-item {
   display: flex;
   flex-direction: column;
