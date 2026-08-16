@@ -1,3 +1,14 @@
+// Notification titles/bodies come from a remote feed (jsDelivr -> repo main
+// branch), so everything that reaches innerHTML has to be escaped/sanitised.
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const notificationsList = document.getElementById('notifications-list');
   const emptyState = document.getElementById('empty-state');
@@ -49,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
       notificationItem.innerHTML = `
         <div class="notification-title">
           ${notification.read ? '' : '<span class="unread-marker"></span>'}
-          ${notification.title}
+          ${escapeHtml(notification.title)}
         </div>
         <div class="notification-date">${formattedDate}</div>
         <div class="notification-actions">
@@ -104,14 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let htmlContent;
     try {
-      htmlContent = marked.parse(content);
+      htmlContent = DOMPurify.sanitize(marked.parse(content));
     } catch (error) {
       console.error('Error parsing markdown:', error);
-      htmlContent = `<p>${content}</p>`;
+      htmlContent = `<p>${escapeHtml(content)}</p>`;
     }
-    
+
     notificationDetail.innerHTML = `
-      <h1>${notification.title}</h1>
+      <h1>${escapeHtml(notification.title)}</h1>
       <div>${htmlContent}</div>
     `;
     

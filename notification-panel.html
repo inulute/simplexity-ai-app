@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Notifications</title>
-  <!-- Include Marked.js for Markdown parsing -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Marked.js for Markdown parsing + DOMPurify to sanitise it.
+       Bundled locally so the panel still works with no network access. -->
+  <script src="./node_modules/marked/lib/marked.umd.js"></script>
+  <script src="./node_modules/dompurify/dist/purify.min.js"></script>
   <style>
     
     * {
