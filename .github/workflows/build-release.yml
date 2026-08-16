@@ -13,10 +13,17 @@ on:
         type: boolean
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
+    # No `contents: write` and no GH_TOKEN here on purpose: electron-builder
+    # defaults `--publish` to "onTag" whenever a CI tag is present, and will
+    # silently upload every artifact (plus .blockmap / latest*.yml) to the
+    # release by itself if it can find a GitHub token. The `release` job below
+    # is the only thing allowed to touch the release.
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -32,10 +39,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: 'npm'
@@ -46,24 +53,18 @@ jobs:
       - name: Build for Windows
         if: matrix.platform == 'win'
         run: npm run package-win
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build for macOS
         if: matrix.platform == 'mac'
         run: npm run package-mac
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build for Linux
         if: matrix.platform == 'linux'
         run: npm run package-linux
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'win'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-builds
           path: |
@@ -72,7 +73,7 @@ jobs:
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'mac'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos-builds
           path: |
@@ -82,7 +83,7 @@ jobs:
 
       - name: Upload Linux artifacts
         if: matrix.platform == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-builds
           path: |
@@ -94,13 +95,15 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: dist
 
@@ -123,7 +126,7 @@ jobs:
           fi
 
       - name: Create Release Draft
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           name: "Simplexity AI v${{ steps.version.outputs.VERSION }}"
