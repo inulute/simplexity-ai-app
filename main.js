@@ -972,8 +972,16 @@ function createTray() {
   try {
     let trayIcon = iconPath;
     if (isMac) {
-      // The source PNG is ~1058px; the macOS menu bar wants 16pt.
-      trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+      // The source PNG is ~1058px; the macOS menu bar wants 16pt. Build it as a
+      // 32px bitmap tagged scaleFactor 2 so it stays sharp on Retina displays.
+      const source = nativeImage.createFromPath(iconPath);
+      trayIcon = nativeImage.createFromBuffer(
+        source.resize({ width: 32, height: 32 }).toPNG(),
+        { scaleFactor: 2 }
+      );
+      if (trayIcon.isEmpty()) {
+        trayIcon = source.resize({ width: 16, height: 16 });
+      }
     }
 
     tray = new Tray(trayIcon);
