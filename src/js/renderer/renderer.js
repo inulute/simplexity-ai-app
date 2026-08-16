@@ -161,6 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
         restoreLastSessionToggle.checked = data.restoreLastSession !== false;
       }
 
+      const chosenShortcuts = Array.isArray(data.sidebarShortcuts) ? data.sidebarShortcuts : [];
+      document.querySelectorAll('.sidebar-shortcut').forEach((box) => {
+        box.checked = chosenShortcuts.includes(box.value);
+      });
+
       const closeToTrayToggle = document.getElementById('toggle-closeToTray');
       if (closeToTrayToggle) {
         closeToTrayToggle.checked = data.closeToTray !== false;
@@ -313,6 +318,9 @@ document.addEventListener('DOMContentLoaded', () => {
             : false,
           autoStartEnabled: autostartToggle ? autostartToggle.checked : false,
           restoreLastSession: restoreLastSessionToggle ? restoreLastSessionToggle.checked : true,
+          sidebarShortcuts: [...document.querySelectorAll('.sidebar-shortcut')]
+            .filter((box) => box.checked)
+            .map((box) => box.value),
           closeToTray: closeToTrayToggle ? closeToTrayToggle.checked : true,
           ctrlEnterToSend: ctrlEnterToSendToggle ? ctrlEnterToSendToggle.checked : false
         };

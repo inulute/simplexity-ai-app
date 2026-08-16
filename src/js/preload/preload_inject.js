@@ -1,3 +1,5 @@
+const { ipcRenderer } = require('electron');
+
 window.addEventListener('DOMContentLoaded', () => {
     const isLabs = window.location.hostname.includes('labs.perplexity.ai');
     const isMain = window.location.hostname.includes('perplexity.ai') && !isLabs;
@@ -17,54 +19,72 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     // Perplexity keeps Discover, Finance, Personal CFO, Health, Academic and
-    // Patents behind the top-right menu, which is two clicks away. These add
-    // them to its own left sidebar instead.
+    // Patents behind the top-right menu, two clicks away. A user can promote
+    // any of them into its left sidebar from Settings; nothing is added unless
+    // they ask for it, so the default install leaves Perplexity's UI alone.
     //
-    // The menu entries do not exist in the DOM until the menu is opened, so
-    // they cannot be moved -- we build our own. Each item is cloned from a real
-    // sidebar entry so it inherits Perplexity's markup, spacing and theming,
-    // and the icons reference their own sprite (651 symbols, all six verified
-    // present). That survives styling changes far better than hand-written CSS.
-    const SIDEBAR_LINKS = [
-        { label: 'Discover',     path: '/discover', icon: 'pplx-icon-compass' },
-        { label: 'Finance',      path: '/finance',  icon: 'pplx-icon-chart-area-line' },
-        { label: 'Personal CFO', path: '/cfo',      icon: 'pplx-icon-wallet' },
-        { label: 'Health',       path: '/health',   icon: 'pplx-icon-heart' },
-        { label: 'Academic',     path: '/academic', icon: 'pplx-icon-school' },
-        { label: 'Patents',      path: '/patents',  icon: 'pplx-icon-gavel' },
+    // The menu entries do not exist in the DOM until that menu is opened, so
+    // they cannot be moved -- each one is rebuilt by cloning a real sidebar
+    // row, which inherits Perplexity's markup, spacing and theming. Icons come
+    // from their own sprite.
+    const AVAILABLE_SHORTCUTS = [
+        { id: 'discover', label: 'Discover',     path: '/discover', icon: 'pplx-icon-compass' },
+        { id: 'finance',  label: 'Finance',      path: '/finance',  icon: 'pplx-icon-chart-area-line' },
+        { id: 'cfo',      label: 'Personal CFO', path: '/cfo',      icon: 'pplx-icon-wallet' },
+        { id: 'health',   label: 'Health',       path: '/health',   icon: 'pplx-icon-heart' },
+        { id: 'academic', label: 'Academic',     path: '/academic', icon: 'pplx-icon-school' },
+        { id: 'patents',  label: 'Patents',      path: '/patents',  icon: 'pplx-icon-gavel' },
     ];
 
     const INJECTED_ATTR = 'data-simplexity-shortcut';
+    let enabledIds = [];
     let injecting = false;
 
-    function injectSidebarLinks() {
-        // Our own insertions retrigger the observer; without this the callback
-        // recurses while the DOM is still being written.
+    function setLabel(clone, text) {
+        // The label is the truncating text node in the cloned row. Matching on
+        // the class is far more reliable than walking for "the last leaf with
+        // text", which picked the wrong node and left every row reading "New".
+        const el = clone.querySelector('[class*="truncate"]')
+            || [...clone.querySelectorAll('div, span')]
+                .reverse()
+                .find((d) => d.children.length === 0 && d.textContent.trim().length > 0);
+        if (el) el.textContent = text;
+        return !!el;
+    }
+
+    function syncSidebarLinks() {
         if (injecting) return;
 
         const nav = document.querySelector('nav[class*="group/sidebar"]');
         if (!nav) return;
 
-        // Never clone one of our own items, or edits compound.
-        const templateAnchor = [...nav.querySelectorAll('a[href^="/"][class*="absolute"]')]
-            .find((a) => !a.closest('[' + INJECTED_ATTR + ']'));
-        if (!templateAnchor) return;
-
-        const template = templateAnchor.closest('[class*="collapsible-sidebar-section"]');
-        if (!template || !template.parentElement) return;
-
         injecting = true;
         try {
+            // Drop anything the user has since unticked.
+            nav.querySelectorAll('[' + INJECTED_ATTR + ']').forEach((el) => {
+                if (!enabledIds.includes(el.getAttribute(INJECTED_ATTR))) el.remove();
+            });
+
+            const wanted = AVAILABLE_SHORTCUTS.filter((s) => enabledIds.includes(s.id));
+            if (!wanted.length) return;
+
+            // Never clone one of our own rows, or the edits compound.
+            const templateAnchor = [...nav.querySelectorAll('a[href^="/"][class*="absolute"]')]
+                .find((a) => !a.closest('[' + INJECTED_ATTR + ']'));
+            if (!templateAnchor) return;
+
+            const template = templateAnchor.closest('[class*="collapsible-sidebar-section"]');
+            if (!template || !template.parentElement) return;
+
             let after = template;
-            // Keep our block together and in order, after whatever is already there.
             const existing = nav.querySelectorAll('[' + INJECTED_ATTR + ']');
             if (existing.length) after = existing[existing.length - 1];
 
-            for (const link of SIDEBAR_LINKS) {
-                if (nav.querySelector('[' + INJECTED_ATTR + '="' + link.path + '"]')) continue;
+            for (const link of wanted) {
+                if (nav.querySelector('[' + INJECTED_ATTR + '="' + link.id + '"]')) continue;
 
                 const clone = template.cloneNode(true);
-                clone.setAttribute(INJECTED_ATTR, link.path);
+                clone.setAttribute(INJECTED_ATTR, link.id);
 
                 const anchor = clone.querySelector('a[href]');
                 if (!anchor) continue;
@@ -77,11 +97,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     use.setAttribute('href', '#' + link.icon);
                 }
 
-                // The label is the deepest text-bearing node in the cloned row.
-                const labelEl = [...clone.querySelectorAll('div')]
-                    .reverse()
-                    .find((d) => d.children.length === 0 && d.textContent.trim().length > 0);
-                if (labelEl) labelEl.textContent = link.label;
+                // If the label cannot be set the row would read as a copy of
+                // whatever was cloned, which is worse than not adding it.
+                if (!setLabel(clone, link.label)) continue;
 
                 after.parentElement.insertBefore(clone, after.nextSibling);
                 after = clone;
@@ -112,7 +130,7 @@ window.addEventListener('DOMContentLoaded', () => {
         removeNagScreens(labsSelectors);
     } else if (isMain) {
         removeNagScreens(mainSelectors);
-        injectSidebarLinks();
+        syncSidebarLinks();
     }
 
 
@@ -121,9 +139,20 @@ window.addEventListener('DOMContentLoaded', () => {
             removeNagScreens(labsSelectors);
         } else if (isMain) {
             removeNagScreens(mainSelectors);
-            injectSidebarLinks();
+            syncSidebarLinks();
         }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
+
+    ipcRenderer.invoke('get-sidebar-shortcuts').then((ids) => {
+        enabledIds = Array.isArray(ids) ? ids : [];
+        syncSidebarLinks();
+    }).catch(() => {});
+
+    // Applying changes without a reload keeps Settings feeling immediate.
+    ipcRenderer.on('sidebar-shortcuts-changed', (_event, ids) => {
+        enabledIds = Array.isArray(ids) ? ids : [];
+        syncSidebarLinks();
+    });
 });
