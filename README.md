@@ -218,16 +218,17 @@ npm run package-linux  # Creates .AppImage and .deb (Linux)
 
 ## ⌨️ Keyboard Shortcuts
 
-All shortcuts are **fully customizable** in Settings!
+All shortcuts are **fully customizable** in Settings, and are disabled by default — enable the ones you want.
 
 ### Default Shortcuts
 
 | Action | Windows/Linux | macOS | Description |
 |--------|---------------|-------|-------------|
-| **Quick Search** | `Alt+Shift+X` | `Cmd+Shift+X` | Search selected text from anywhere |
-| **Custom Prefix Search** | `Alt+Shift+D` | `Cmd+Shift+D` | Search with custom prefixes |
-| **Open P AI** | `Ctrl+1` | `Cmd+1` | Switch to P AI |
-| **Send to Tray** | `Alt+Shift+W` | `Cmd+T` | Minimize to system tray |
+| **Quick Search** | `Alt+Shift+X` | `Cmd+Shift+P` | Search selected text from anywhere |
+| **Custom Prefix Search** | `Alt+Shift+D` | `Cmd+Shift+C` | Search with custom prefixes |
+| **Open P AI** | `Ctrl+1` | `Cmd+1` | Switch to the first tab |
+| **Second Tab** | `Ctrl+2` | `Cmd+2` | Switch to the second tab |
+| **Send to Tray** | `Alt+Shift+W` | `Cmd+Shift+W` | Minimize to system tray |
 | **Restore from Tray** | `Alt+Shift+Q` | `Cmd+Shift+T` | Restore app window |
 | **Find in Page** | `Ctrl+F` | `Cmd+F` | Search text on current page |
 | **Zoom In** | `Ctrl+=` | `Cmd+=` | Increase text size |
@@ -245,7 +246,7 @@ Highlight any text on your desktop → Press your Quick Search hotkey → Instan
 
 **How it works:**
 1. Select text anywhere (browser, document, email, etc.)
-2. Press `Alt+Shift+X` (Windows/Linux) or `Cmd+Shift+X` (macOS)
+2. Press `Alt+Shift+X` (Windows/Linux) or `Cmd+Shift+P` (macOS)
 3. SimplexityAI opens with your search ready!
 
 ### 📋 **Prefix Search**
