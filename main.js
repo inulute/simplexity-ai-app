@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, BrowserView, Menu, MenuItem, globalShortcut, Tray, shell, net, Notification, clipboard, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, BrowserView, Menu, MenuItem, globalShortcut, Tray, nativeImage, shell, net, Notification, clipboard, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
@@ -957,9 +957,10 @@ function createTray() {
 
   if (isWindows) {
     iconPath = path.join(__dirname, 'assets', 'icons', 'win', 'icon.ico');
-  } else if (isMac) {
-    iconPath = path.join(__dirname, 'assets', 'icons', 'mac', 'favicon.icns');
   } else {
+    // favicon.icns only carries an "ic10" (1024px) representation, which
+    // nativeImage cannot decode -- it returns an empty image and `new Tray()`
+    // throws, leaving macOS with no tray icon at all. Use the PNG instead.
     iconPath = path.join(__dirname, 'assets', 'icons', 'png', 'favicon.png');
   }
 
@@ -969,7 +970,13 @@ function createTray() {
   }
 
   try {
-    tray = new Tray(iconPath);
+    let trayIcon = iconPath;
+    if (isMac) {
+      // The source PNG is ~1058px; the macOS menu bar wants 16pt.
+      trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+    }
+
+    tray = new Tray(trayIcon);
     tray.setToolTip('SimplexityAI');
 
     const contextMenu = Menu.buildFromTemplate([
