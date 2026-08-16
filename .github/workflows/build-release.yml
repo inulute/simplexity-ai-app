@@ -124,27 +124,28 @@ jobs:
         with:
           path: dist
 
-      # Flatten every artifact into one directory so the attestation and the
-      # release upload operate on exactly the same set of files. Fail loudly if
-      # it is empty: attesting a glob that matches nothing fails the step later
+      # Flatten every artifact into one directory so the release upload and the
+      # attestation operate on exactly the same set of files. Fail loudly if it
+      # is empty: attesting a glob that matches nothing fails the step later
       # with a far less obvious error.
       - name: Stage release files
+        shell: bash
         run: |
           mkdir -p staged
-          find dist -type f -exec mv -n {} staged/ \;
+          # Check for basename collisions first: a plain `mv` into one directory
+          # would silently drop a same-named artifact from another platform.
+          # Done before the move so `exit 1` runs in this shell, not a subshell.
+          dupes=$(find dist -type f -exec basename {} \; | sort | uniq -d)
+          if [ -n "$dupes" ]; then
+            echo "::error::Duplicate artifact names across platforms: $dupes"
+            exit 1
+          fi
+          find dist -type f -exec mv {} staged/ \;
           ls -la staged
           if [ -z "$(ls -A staged)" ]; then
             echo "::error::No build artifacts were staged for the release"
             exit 1
           fi
-
-      # Replaces the never-wired GPG signing hook that used to live in
-      # build/after-pack.js. Keyless, no secrets to rotate; verify with
-      #   gh attestation verify <file> --repo ${{ github.repository }}
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@v4
-        with:
-          subject-path: staged/*
 
       - name: Get version from tag
         id: version
@@ -172,3 +173,15 @@ jobs:
             staged/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Replaces the never-wired GPG signing hook that used to live in
+      # build/after-pack.js. Keyless, no secrets to rotate; verify with
+      #   gh attestation verify <file> --repo ${{ github.repository }}
+      # Runs after the upload on purpose: the release is a draft, so nothing is
+      # public until the owner publishes it, and a provenance hiccup should show
+      # up as a red step rather than stranding the binaries. Attestations are
+      # keyed on the file digest, so order does not affect their validity.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: staged/*
