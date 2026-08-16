@@ -50,28 +50,50 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Code signing activates as soon as the matching secrets exist. When they
-      # are unset GitHub substitutes an empty string, which electron-builder
-      # treats as "no certificate": it logs `skipped ... code signing` and the
-      # build still succeeds. Notarization is only attempted after a successful
-      # macOS signature, and getNotarizeOptions() returns null (warn + skip)
-      # when APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID are empty.
+      # Signing variables are exported ONLY when the matching secret exists.
+      # An unset secret expands to an empty string, and electron-builder treats
+      # an empty CSC_LINK as a certificate *path* rather than as "no
+      # certificate" -- on macOS that resolves to the repo root and fails the
+      # build with "<repo> not a file". Windows tolerates it, macOS does not,
+      # so the variables must be absent rather than empty.
+      - name: Configure code signing
+        id: signing
+        run: |
+          if [ "${{ matrix.platform }}" = "mac" ]; then
+            LINK="${{ secrets.MAC_CSC_LINK }}"
+            PASS="${{ secrets.MAC_CSC_KEY_PASSWORD }}"
+          elif [ "${{ matrix.platform }}" = "win" ]; then
+            LINK="${{ secrets.WIN_CSC_LINK }}"
+            PASS="${{ secrets.WIN_CSC_KEY_PASSWORD }}"
+          else
+            LINK=""; PASS=""
+          fi
+
+          if [ -n "$LINK" ]; then
+            echo "CSC_LINK=$LINK" >> $GITHUB_ENV
+            echo "CSC_KEY_PASSWORD=$PASS" >> $GITHUB_ENV
+            echo "Signing certificate configured for ${{ matrix.platform }}."
+          else
+            # Without this electron-builder searches the keychain and warns.
+            echo "CSC_IDENTITY_AUTO_DISCOVERY=false" >> $GITHUB_ENV
+            echo "No signing certificate for ${{ matrix.platform }}; building unsigned."
+          fi
+
+          if [ "${{ matrix.platform }}" = "mac" ] && [ -n "${{ secrets.APPLE_ID }}" ]; then
+            echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> $GITHUB_ENV
+            echo "APPLE_APP_SPECIFIC_PASSWORD=${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" >> $GITHUB_ENV
+            echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> $GITHUB_ENV
+            echo "Notarization credentials configured."
+          fi
+        shell: bash
+
       - name: Build for Windows
         if: matrix.platform == 'win'
         run: npm run package-win
-        env:
-          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
       - name: Build for macOS
         if: matrix.platform == 'mac'
         run: npm run package-mac
-        env:
-          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Build for Linux
         if: matrix.platform == 'linux'
