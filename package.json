@@ -62,9 +62,16 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
       ]
+    },
+    "dmg": {
+      "writeUpdateInfo": false
     },
     "win": {
       "target": [
@@ -80,7 +87,7 @@
       "shortcutName": "Simplexity AI",
       "runAfterFinish": true,
       "artifactName": "${productName}-Setup-${version}.${ext}",
-      "differentialPackage": true,
+      "differentialPackage": false,
       "include": "build/installer.nsh",
       "installerIcon": "assets/icons/win/icon.ico",
       "uninstallerIcon": "assets/icons/win/icon.ico"

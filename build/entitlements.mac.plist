@@ -18,8 +18,9 @@
     <true/>
     <key>com.apple.security.network.client</key>
     <true/>
-    <key>com.apple.security.app-sandbox</key>
-    <true/>
+    <!-- com.apple.security.app-sandbox is deliberately NOT set: this is a
+         Developer ID (non-MAS) distribution, and enabling the App Sandbox here
+         would break the tray, global shortcuts and clipboard access. -->
     <key>com.apple.security.automation.apple-events</key>
     <true/>
 </dict>

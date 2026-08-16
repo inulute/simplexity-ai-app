@@ -50,13 +50,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Code signing activates as soon as the matching secrets exist. When they
+      # are unset GitHub substitutes an empty string, which electron-builder
+      # treats as "no certificate": it logs `skipped ... code signing` and the
+      # build still succeeds. Notarization is only attempted after a successful
+      # macOS signature, and getNotarizeOptions() returns null (warn + skip)
+      # when APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID are empty.
       - name: Build for Windows
         if: matrix.platform == 'win'
         run: npm run package-win
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
       - name: Build for macOS
         if: matrix.platform == 'mac'
         run: npm run package-mac
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Build for Linux
         if: matrix.platform == 'linux'
@@ -78,7 +93,6 @@ jobs:
           name: macos-builds
           path: |
             release-builds/*.dmg
-            release-builds/*.zip
           retention-days: 5
 
       - name: Upload Linux artifacts
@@ -97,6 +111,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
+      # Required by actions/attest-build-provenance (keyless Sigstore signing).
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout
@@ -107,8 +124,27 @@ jobs:
         with:
           path: dist
 
-      - name: List artifacts
-        run: find dist -type f | sort
+      # Flatten every artifact into one directory so the attestation and the
+      # release upload operate on exactly the same set of files. Fail loudly if
+      # it is empty: attesting a glob that matches nothing fails the step later
+      # with a far less obvious error.
+      - name: Stage release files
+        run: |
+          mkdir -p staged
+          find dist -type f -exec mv -n {} staged/ \;
+          ls -la staged
+          if [ -z "$(ls -A staged)" ]; then
+            echo "::error::No build artifacts were staged for the release"
+            exit 1
+          fi
+
+      # Replaces the never-wired GPG signing hook that used to live in
+      # build/after-pack.js. Keyless, no secrets to rotate; verify with
+      #   gh attestation verify <file> --repo ${{ github.repository }}
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: staged/*
 
       - name: Get version from tag
         id: version
@@ -133,8 +169,6 @@ jobs:
           body_path: ${{ steps.notes.outputs.HAS_NOTES == 'true' && steps.notes.outputs.NOTES_FILE || '' }}
           generate_release_notes: ${{ steps.notes.outputs.HAS_NOTES != 'true' }}
           files: |
-            dist/windows-builds/*
-            dist/macos-builds/*
-            dist/linux-builds/*
+            staged/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
