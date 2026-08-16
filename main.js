@@ -604,6 +604,9 @@ function createWindow() {
     if (!settingsWindow) {
       reattachShortcuts();
     }
+    // Toggling the window from a hotkey is the case in #46: the app reappears
+    // and the caret should be ready to type, not on the sidebar.
+    if (!settingsWindow) setTimeout(focusComposer, 250);
   });
 
   mainWindow.on('blur', () => {
@@ -730,6 +733,41 @@ function restoredTabUrl(tabId) {
   if (settings.get('restoreLastSession', true) !== true) return tabHome(tabId);
   const stored = settings.get('tabUrls', {});
   return isRestorableUrl(stored[tabId]) ? stored[tabId] : tabHome(tabId);
+}
+
+// Issue #46: every focus() call in this file targets mainWindow, which is the
+// sidebar renderer, so opening the app parked the caret on the sidebar links
+// and Tab could not reach the page. Focus the BrowserView and put the caret in
+// the composer instead. Selectors are tried in order because Perplexity's
+// markup changes; if none match we still leave focus on the page rather than
+// the sidebar, which is already the improvement being asked for.
+function focusComposer() {
+  const view = views[activeTabId] || currentView;
+  if (!view || view.webContents.isDestroyed()) return;
+
+  view.webContents.focus();
+  view.webContents.executeJavaScript(`
+    (function focusComposer() {
+      const selectors = [
+        'textarea:not([readonly]):not([disabled])',
+        'div[contenteditable="true"]',
+        'input[type="search"]:not([readonly]):not([disabled])'
+      ];
+      for (const selector of selectors) {
+        for (const el of document.querySelectorAll(selector)) {
+          const rect = el.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            el.focus();
+            if (typeof el.setSelectionRange === 'function' && typeof el.value === 'string') {
+              el.setSelectionRange(el.value.length, el.value.length);
+            }
+            return true;
+          }
+        }
+      }
+      return false;
+    })();
+  `).catch(() => {});
 }
 
 function isCtrlEnterToSendEnabled() {
@@ -985,6 +1023,9 @@ function switchView(target) {
     });
 
     currentView.webContents.on('did-finish-load', () => {
+      // The page owns focus from here; without this the sidebar keeps it.
+      if (views[activeTabId] === currentView) setTimeout(focusComposer, 150);
+
       currentView.webContents.executeJavaScript(`
         (function removeNagScreens() {
           const nagScreenSelectors = [
@@ -1016,6 +1057,9 @@ function switchView(target) {
 
   mainWindow.addBrowserView(currentView);
   adjustViewBounds();
+  // Switching tabs should hand the caret to the page you switched to. A new
+  // view has not loaded yet, so did-finish-load covers that case instead.
+  if (!currentView.webContents.isLoading()) setTimeout(focusComposer, 50);
 }
 
 function cleanupUnusedResources() {
