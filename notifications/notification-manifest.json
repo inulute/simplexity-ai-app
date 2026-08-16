@@ -1,6 +1,13 @@
 {
   "notifications": [
     {
+      "id": "8",
+      "title": "SimplexityAI v5.2.0 \u2014 Choose what appears in Perplexity's sidebar",
+      "filename": "notification-8.md",
+      "date": "2026-08-16",
+      "priority": "high"
+    },
+    {
       "id": "7",
       "title": "SimplexityAI v5.1.0 \u2014 Security fixes, Intel Mac support, and a second tab",
       "filename": "notification-7.md",
