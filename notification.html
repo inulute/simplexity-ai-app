@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Notification</title>
+  <!-- All content arrives over IPC, so no network access is needed here. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+  <!-- The body is markdown rendered in the main process from a remote feed,
+       so it has to be sanitised before it reaches innerHTML. -->
+  <script src="./node_modules/dompurify/dist/purify.min.js"></script>
   <style>
     * {
       margin: 0;

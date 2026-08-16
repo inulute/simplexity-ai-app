@@ -3,8 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Notifications</title>
-  <!-- Include Marked.js for Markdown parsing -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- All content arrives over IPC, so no network access is needed here. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+  <!-- Marked.js for Markdown parsing + DOMPurify to sanitise it.
+       Bundled locally so the panel still works with no network access. -->
+  <script src="./node_modules/marked/lib/marked.umd.js"></script>
+  <script src="./node_modules/dompurify/dist/purify.min.js"></script>
   <style>
     
     * {

@@ -44,7 +44,7 @@ function runBuild() {
         break;
       case 'linux-other':
         console.log('Running Linux build (AppImage only to avoid fpm issues)...');
-        execSync('electron-builder --linux AppImage', { stdio: 'inherit' });
+        execSync('electron-builder --linux AppImage --publish never', { stdio: 'inherit' });
         break;
       default:
         console.error(`Unsupported OS: ${detectedOS}`);

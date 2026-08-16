@@ -3,11 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <title>Update Available</title>
+  <!-- Scripts are bundled locally, so nothing remote may be executed. The
+       only network access this page needs is the release-notes fetch in
+       src/js/renderer/update_renderer.js. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src https://raw.githubusercontent.com; form-action 'none'; base-uri 'none'">
   <link rel="stylesheet" href="./src/css/update.css">
   
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+  <!-- Bundled locally: loading these from a CDN breaks the dialog whenever the
+       CDN is unreachable (offline / blocked / corporate proxy) and pulls a
+       floating, unpinned version of marked into the renderer at runtime. -->
+  <script src="./node_modules/marked/lib/marked.umd.js"></script>
+
+  <script src="./node_modules/dompurify/dist/purify.min.js"></script>
 
 </head>
 <body>

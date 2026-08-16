@@ -13,10 +13,17 @@ on:
         type: boolean
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
+    # No `contents: write` and no GH_TOKEN here on purpose: electron-builder
+    # defaults `--publish` to "onTag" whenever a CI tag is present, and will
+    # silently upload every artifact (plus .blockmap / latest*.yml) to the
+    # release by itself if it can find a GitHub token. The `release` job below
+    # is the only thing allowed to touch the release.
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -32,10 +39,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: 'npm'
@@ -43,27 +50,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Code signing activates as soon as the matching secrets exist. When they
+      # are unset GitHub substitutes an empty string, which electron-builder
+      # treats as "no certificate": it logs `skipped ... code signing` and the
+      # build still succeeds. Notarization is only attempted after a successful
+      # macOS signature, and getNotarizeOptions() returns null (warn + skip)
+      # when APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID are empty.
       - name: Build for Windows
         if: matrix.platform == 'win'
         run: npm run package-win
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
       - name: Build for macOS
         if: matrix.platform == 'mac'
         run: npm run package-mac
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Build for Linux
         if: matrix.platform == 'linux'
         run: npm run package-linux
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'win'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-builds
           path: |
@@ -72,17 +88,16 @@ jobs:
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'mac'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos-builds
           path: |
             release-builds/*.dmg
-            release-builds/*.zip
           retention-days: 5
 
       - name: Upload Linux artifacts
         if: matrix.platform == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-builds
           path: |
@@ -94,18 +109,43 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+      # Required by actions/attest-build-provenance (keyless Sigstore signing).
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: dist
 
-      - name: List artifacts
-        run: find dist -type f | sort
+      # Flatten every artifact into one directory so the release upload and the
+      # attestation operate on exactly the same set of files. Fail loudly if it
+      # is empty: attesting a glob that matches nothing fails the step later
+      # with a far less obvious error.
+      - name: Stage release files
+        shell: bash
+        run: |
+          mkdir -p staged
+          # Check for basename collisions first: a plain `mv` into one directory
+          # would silently drop a same-named artifact from another platform.
+          # Done before the move so `exit 1` runs in this shell, not a subshell.
+          dupes=$(find dist -type f -exec basename {} \; | sort | uniq -d)
+          if [ -n "$dupes" ]; then
+            echo "::error::Duplicate artifact names across platforms: $dupes"
+            exit 1
+          fi
+          find dist -type f -exec mv {} staged/ \;
+          ls -la staged
+          if [ -z "$(ls -A staged)" ]; then
+            echo "::error::No build artifacts were staged for the release"
+            exit 1
+          fi
 
       - name: Get version from tag
         id: version
@@ -123,15 +163,25 @@ jobs:
           fi
 
       - name: Create Release Draft
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           name: "Simplexity AI v${{ steps.version.outputs.VERSION }}"
           body_path: ${{ steps.notes.outputs.HAS_NOTES == 'true' && steps.notes.outputs.NOTES_FILE || '' }}
           generate_release_notes: ${{ steps.notes.outputs.HAS_NOTES != 'true' }}
           files: |
-            dist/windows-builds/*
-            dist/macos-builds/*
-            dist/linux-builds/*
+            staged/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Replaces the never-wired GPG signing hook that used to live in
+      # build/after-pack.js. Keyless, no secrets to rotate; verify with
+      #   gh attestation verify <file> --repo ${{ github.repository }}
+      # Runs after the upload on purpose: the release is a draft, so nothing is
+      # public until the owner publishes it, and a provenance hiccup should show
+      # up as a red step rather than stranding the binaries. Attestations are
+      # keyed on the file digest, so order does not affect their validity.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: staged/*

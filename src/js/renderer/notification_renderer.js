@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (data.title) titleElement.textContent = data.title;
     if (data.content) {
-      contentElement.innerHTML = data.content;
+      contentElement.innerHTML = DOMPurify.sanitize(data.content);
       setTimeout(() => contentElement.style.opacity = '1', 10);
     } else {
       contentElement.innerHTML = '<p>No content available</p>';
