@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('settings-container')) {
     const shortcutFields = {
       perplexityAI: document.getElementById('shortcut-perplexityAI'),
+      secondTab: document.getElementById('shortcut-secondTab'),
       sendToTray: document.getElementById('shortcut-sendToTray'),
       restoreApp: document.getElementById('shortcut-restoreApp'),
       quickSearch: document.getElementById('shortcut-quickSearch'),
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const shortcutToggles = {
       perplexityAI: document.getElementById('toggle-perplexityAI'),
+      secondTab: document.getElementById('toggle-secondTab'),
       sendToTray: document.getElementById('toggle-sendToTray'),
       restoreApp: document.getElementById('toggle-restoreApp'),
       quickSearch: document.getElementById('toggle-quickSearch'),
@@ -139,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadCurrentShortcuts();
       
       if (defaultAISelect) {
-        defaultAISelect.value = data.defaultAI || 'https://perplexity.ai';
+        defaultAISelect.value = data.defaultAI || 'tab1';
       }
       
       const autostartToggle = document.getElementById('toggle-autostart');
@@ -280,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const defaultShortcuts = isMac
         ? {
             perplexityAI: { key: 'Command+1', enabled: false },
+            secondTab: { key: 'Command+2', enabled: false },
             sendToTray: { key: 'Command+T', enabled: false },
             restoreApp: { key: 'Command+Shift+T', enabled: false },
             quickSearch: { key: 'Command+Shift+X', enabled: false },
@@ -287,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         : {
             perplexityAI: { key: 'Control+1', enabled: false },
+            secondTab: { key: 'Control+2', enabled: false },
             sendToTray: { key: 'Alt+Shift+W', enabled: false },
             restoreApp: { key: 'Alt+Shift+Q', enabled: false },
             quickSearch: { key: 'Alt+Shift+X', enabled: false },
@@ -409,6 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getFriendlyName(key) {
       const nameMap = {
         perplexityAI: 'AI Search',
+        secondTab: 'Second Tab',
         sendToTray: 'Send to Tray',
         restoreApp: 'Restore App',
         quickSearch: 'Quick Search',
@@ -420,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getDefaultMacShortcut(key) {
       const defaults = {
         perplexityAI: 'Command+1',
+        secondTab: 'Command+2',
         sendToTray: 'Command+T',
         restoreApp: 'Command+Shift+T',
         quickSearch: 'Command+Shift+P',
@@ -431,6 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getDefaultWindowsShortcut(key) {
       const defaults = {
         perplexityAI: 'Control+1',
+        secondTab: 'Control+2',
         sendToTray: 'Alt+Shift+W',
         restoreApp: 'Alt+Shift+Q',
         quickSearch: 'Alt+Shift+X',
@@ -521,13 +528,21 @@ function closeSettings() {
 }
 
 function initNavigationButtons() {
-  const perplexityAIButton = document.querySelector('.menu-item[onclick*="perplexity.ai"]');
+  const perplexityAIButton = document.getElementById('tab1-button');
+  const secondTabButton = document.getElementById('tab2-button');
   const refreshButton = document.querySelector('.menu-item[onclick*="refresh"]');
   
   if (perplexityAIButton) {
     perplexityAIButton.addEventListener('click', (event) => {
       event.preventDefault();
-      window.electronAPI.switchAITool('https://perplexity.ai');
+      window.electronAPI.switchAITool('tab1');
+    });
+  }
+
+  if (secondTabButton) {
+    secondTabButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      window.electronAPI.switchAITool('tab2');
     });
   }
   
