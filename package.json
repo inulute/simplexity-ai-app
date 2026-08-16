@@ -1,7 +1,7 @@
 {
   "name": "simplexity-ai-app",
   "productName": "SimplexityAI",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "description": "SimplexityAI - Unofficial Perplexity AI Desktop App not affiliated with Perplexity AI",
   "main": "main.js",
   "scripts": {
@@ -93,6 +93,7 @@
       "uninstallerIcon": "assets/icons/win/icon.ico"
     },
     "linux": {
+      "compression": "normal",
       "target": [
         "AppImage",
         "deb"
