@@ -188,8 +188,8 @@ const defaultShortcuts = isMac
   ? {
       perplexityAI: { key: 'Command+1', enabled: false },
       secondTab: { key: 'Command+2', enabled: false },
-      sendToTray: { key: 'Command+W', enabled: false },
-      restoreApp: { key: 'Command+Shift+Q', enabled: false },
+      sendToTray: { key: 'Command+Shift+W', enabled: false },
+      restoreApp: { key: 'Command+Shift+T', enabled: false },
       quickSearch: { key: 'Command+Shift+P', enabled: false },
       customPrefixSearch: { key: 'Command+Shift+C', enabled: false }
     }
@@ -702,6 +702,36 @@ function adjustViewBounds() {
   }
 }
 
+// Each tab remembers the page it was last on, so reopening the app puts you
+// back where you left off instead of dropping you on whatever perplexity.ai
+// happens to land on that week. Only perplexity.ai pages are restored, so a
+// stale or hostile stored value cannot send a tab somewhere unexpected.
+function isRestorableUrl(url) {
+  if (typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.toLowerCase();
+    return host === 'perplexity.ai' || host.endsWith('.perplexity.ai');
+  } catch {
+    return false;
+  }
+}
+
+function rememberTabUrl(tabId, url) {
+  if (!isTabId(tabId) || !isRestorableUrl(url)) return;
+  const stored = settings.get('tabUrls', {});
+  if (stored[tabId] === url) return;
+  stored[tabId] = url;
+  settings.set('tabUrls', stored);
+}
+
+function restoredTabUrl(tabId) {
+  if (settings.get('restoreLastSession', true) !== true) return tabHome(tabId);
+  const stored = settings.get('tabUrls', {});
+  return isRestorableUrl(stored[tabId]) ? stored[tabId] : tabHome(tabId);
+}
+
 function isCtrlEnterToSendEnabled() {
   return settings.get('ctrlEnterToSend', false);
 }
@@ -739,7 +769,7 @@ function switchView(target) {
     tabId = DEFAULT_TAB_ID;
   }
 
-  const url = navigateTo || tabHome(tabId);
+  const url = navigateTo || restoredTabUrl(tabId);
 
   if (currentView) {
     mainWindow.removeBrowserView(currentView);
@@ -785,6 +815,11 @@ function switchView(target) {
     currentView.webContents.loadURL(url);
     views[tabId] = currentView;
     activeTabId = tabId;
+
+    const trackedTabId = tabId;
+    const track = () => rememberTabUrl(trackedTabId, currentView.webContents.getURL());
+    currentView.webContents.on('did-navigate', track);
+    currentView.webContents.on('did-navigate-in-page', track);
 
     currentView.webContents.setWindowOpenHandler(({ url }) => {
       shell.openExternal(url);
@@ -1349,6 +1384,10 @@ ipcMain.on('set-settings', (event, data) => {
     configureAutoStart(data.autoStartEnabled);
   }
 
+  if (data.restoreLastSession !== undefined) {
+    settings.set('restoreLastSession', data.restoreLastSession);
+  }
+
   if (data.closeToTray !== undefined) {
     settings.set('closeToTray', data.closeToTray);
   }
@@ -1363,10 +1402,12 @@ ipcMain.on('set-settings', (event, data) => {
 ipcMain.on('get-settings', (event) => {
   const data = {
     shortcuts,
-    defaultAI: normalizeDefaultAI(settings.get('defaultAI', 'https://perplexity.ai')),
+    defaultAI: normalizeDefaultAI(settings.get('defaultAI', DEFAULT_TAB_ID)),
     disableHardwareAcceleration: settings.get('disableHardwareAcceleration', false),
     autoStartEnabled: autoStartEnabled,
     closeToTray: settings.get('closeToTray', true),
+    restoreLastSession: settings.get('restoreLastSession', true),
+    defaultShortcuts,
     ctrlEnterToSend: settings.get('ctrlEnterToSend', false)
   };
   event.sender.send('settings', data);

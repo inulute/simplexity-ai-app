@@ -32,6 +32,9 @@ Since most people were using it as a second tab, that's what it now is. **Second
 ### Background tabs keep their state
 An inactive tab was being destroyed about five minutes after you switched away, so going back meant starting over. Both tabs now stay alive while the app is running.
 
+### The app reopens where you left off
+Nothing remembered the page you were on, so every launch handed you back to perplexity.ai and the site decided where that landed — Computer, even if you were last on Search. Each tab now reopens where you left it, with a **Reopen where I left off** setting if you'd rather always start fresh.
+
 ### Smaller download list
 The macOS `.zip` has been removed; it only existed to serve an auto-updater this app doesn't use. The `.dmg` is unaffected.
 
